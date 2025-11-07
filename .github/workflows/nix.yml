@@ -1,0 +1,45 @@
+name: Nix Flake CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  nix-flake-check:
+    name: Check Nix Flakes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-24.05
+
+      - name: Setup Nix Cache
+        uses: cachix/cachix-action@v14
+        with:
+          name: ${{ github.repository_owner }}
+          skipPush: true
+
+      - name: Check root flake
+        run: |
+          echo "🔍 Checking root flake..."
+          nix flake check --show-trace
+
+      - name: Check iac flake
+        run: |
+          echo "🔍 Checking iac flake..."
+          cd iac
+          nix flake check --show-trace
+
+      - name: Build devShells
+        run: |
+          echo "🧱 Building devShells..."
+          nix develop --accept-flake-config --command echo "✅ Root devShell OK"
+          # cd iac
+          # nix develop --accept-flake-config --command echo "✅ IAC devShell OK"
